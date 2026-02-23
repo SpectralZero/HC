@@ -1,0 +1,297 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ 'Edit' if product and product.bag_id else 'Add' }} Product{% endblock %}
+
+{% block content %}
+<div class="admin-page-header">
+    <div>
+        <h1>
+            <i class="bi bi-{{ 'pencil' if product and product.bag_id else 'plus-lg' }}"></i>
+            {{ 'Edit Product' if product and product.bag_id else 'Add New Product' }}
+        </h1>
+        <p class="text-muted">
+            {% if product and product.bag_id %}Editing {{ product.bag_id }}{% else %}Create a new CareBox product{%
+            endif %}
+        </p>
+    </div>
+    <a href="{{ url_for('admin_products') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back
+    </a>
+</div>
+
+<form method="POST" class="product-form" id="productForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-grid">
+        <!-- Basic Info Section -->
+        <div class="form-section">
+            <h3 class="form-section-title"><i class="bi bi-info-circle"></i> Basic Information</h3>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="bag_id">Bag ID <span class="required">*</span></label>
+                    <input type="text" id="bag_id" name="bag_id" class="form-control"
+                        value="{{ product.bag_id if product else '' }}" placeholder="e.g. CBX-0001" {{ 'readonly' if
+                        product and product.bag_id }} required>
+                </div>
+                <div class="form-group">
+                    <label for="box_type">Box Type <span class="required">*</span></label>
+                    <select id="box_type" name="box_type" class="form-control" required>
+                        <option value="">-- Select --</option>
+                        {% set current_type = product.box_type if product else '' %}
+                        <option value="travel" {{ 'selected' if current_type=='travel' }}>✈️ Travel</option>
+                        <option value="recovery" {{ 'selected' if current_type=='recovery' }}>💊 Recovery</option>
+                        <option value="mom" {{ 'selected' if current_type=='mom' }}>👶 Mom</option>
+                        <option value="pilgrim" {{ 'selected' if current_type=='pilgrim' }}>🕌 Pilgrim</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="title_en">Title (English) <span class="required">*</span></label>
+                    <input type="text" id="title_en" name="title_en" class="form-control"
+                        value="{{ product.title_en if product else '' }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="title_ar">Title (Arabic)</label>
+                    <input type="text" id="title_ar" name="title_ar" class="form-control" dir="rtl"
+                        value="{{ product.title_ar if product else '' }}">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="price">Price (JOD) <span class="required">*</span></label>
+                    <input type="number" id="price" name="price" class="form-control" step="0.01" min="0"
+                        value="{{ product.price if product else '0' }}">
+                </div>
+                <div class="form-group">
+                    <label for="serial_last4">Serial Last 4</label>
+                    <input type="text" id="serial_last4" name="serial_last4" class="form-control" maxlength="4"
+                        value="{{ product.serial_last4 if product else '' }}" placeholder="e.g. 1234">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-check-label">
+                    <input type="checkbox" name="is_active" value="TRUE" {{ 'checked' if not product or
+                        product.is_active }}>
+                    Active (visible on website)
+                </label>
+            </div>
+        </div>
+
+        <!-- Media Section -->
+        <div class="form-section">
+            <h3 class="form-section-title"><i class="bi bi-image"></i> Media</h3>
+
+            <div class="form-group">
+                <label for="image_url">Image URL</label>
+                <input type="url" id="image_url" name="image_url" class="form-control"
+                    value="{{ product.image_url if product else '' }}" placeholder="https://...">
+                {% if product and product.image_url %}
+                <div class="image-preview mt-2">
+                    <img src="{{ product.image_url }}" alt="Preview" style="max-height:100px;border-radius:8px">
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="video_url">Video URL (YouTube Embed)</label>
+                <input type="url" id="video_url" name="video_url" class="form-control"
+                    value="{{ product.video_url if product else '' }}" placeholder="https://www.youtube.com/embed/...">
+            </div>
+        </div>
+
+        <!-- Tips Section -->
+        <div class="form-section">
+            <h3 class="form-section-title"><i class="bi bi-lightbulb"></i> Tips</h3>
+
+            <div class="form-group">
+                <label for="tips_en">Tips (English) <small class="text-muted">Separate with |</small></label>
+                <textarea id="tips_en" name="tips_en" class="form-control" rows="2"
+                    placeholder="Tip 1|Tip 2|Tip 3">{{ product.tips_en if product else '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="tips_ar">Tips (Arabic) <small class="text-muted">Separate with |</small></label>
+                <textarea id="tips_ar" name="tips_ar" class="form-control" rows="2" dir="rtl"
+                    placeholder="نصيحة 1|نصيحة 2|نصيحة 3">{{ product.tips_ar if product else '' }}</textarea>
+            </div>
+        </div>
+
+        <!-- Bag Contents Section -->
+        <div class="form-section">
+            <h3 class="form-section-title"><i class="bi bi-list-check"></i> Bag Contents</h3>
+            <p class="form-section-desc">Define what items are included in this bag.</p>
+
+            <div id="contentsBuilder" class="dynamic-builder">
+                <!-- Rows added by JS -->
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addContentBtn">
+                <i class="bi bi-plus"></i> Add Item
+            </button>
+            <input type="hidden" name="contents_json" id="contentsJson">
+        </div>
+
+        <!-- Add-on Options Section -->
+        <div class="form-section">
+            <h3 class="form-section-title"><i class="bi bi-puzzle"></i> Add-on Options</h3>
+            <p class="form-section-desc">Optional add-ons customers can select when ordering.</p>
+
+            <div id="optionsBuilder" class="dynamic-builder">
+                <!-- Rows added by JS -->
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addOptionBtn">
+                <i class="bi bi-plus"></i> Add Option
+            </button>
+            <input type="hidden" name="options_json" id="optionsJson">
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-check-lg"></i>
+            {{ 'Update Product' if product and product.bag_id else 'Create Product' }}
+        </button>
+        <a href="{{ url_for('admin_products') }}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        // Parse existing data
+        let contentsData = [];
+        let optionsData = [];
+
+        try {
+            var rawC = '{{ (product.contents if product and product.contents else "[]")|e }}';
+            contentsData = JSON.parse(rawC);
+            if (!Array.isArray(contentsData)) contentsData = [];
+        } catch (e) {
+            contentsData = [];
+        }
+
+        try {
+            var rawO = '{{ (product.options if product and product.options else "[]")|e }}';
+            optionsData = JSON.parse(rawO);
+            if (!Array.isArray(optionsData)) optionsData = [];
+        } catch (e) {
+            optionsData = [];
+        }
+
+        // Contents Builder
+        const contentsContainer = document.getElementById('contentsBuilder');
+        const contentsJsonInput = document.getElementById('contentsJson');
+
+        function renderContents() {
+            contentsContainer.innerHTML = '';
+            contentsData.forEach(function (item, idx) {
+                const row = document.createElement('div');
+                row.className = 'builder-row';
+                row.innerHTML = `
+                <input type="text" class="form-control" placeholder="Name (EN)" value="${escapeHtml(item.name || '')}" data-field="name" data-idx="${idx}">
+                <input type="text" class="form-control" placeholder="Name (AR)" dir="rtl" value="${escapeHtml(item.name_ar || '')}" data-field="name_ar" data-idx="${idx}">
+                <input type="number" class="form-control builder-qty" placeholder="Qty" min="1" value="${item.qty || 1}" data-field="qty" data-idx="${idx}">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeContent(${idx})"><i class="bi bi-trash"></i></button>
+            `;
+                contentsContainer.appendChild(row);
+            });
+            syncContentsJson();
+        }
+
+        function syncContentsJson() {
+            contentsJsonInput.value = JSON.stringify(contentsData);
+        }
+
+        window.removeContent = function (idx) {
+            contentsData.splice(idx, 1);
+            renderContents();
+        };
+
+        contentsContainer.addEventListener('input', function (e) {
+            const idx = parseInt(e.target.dataset.idx);
+            const field = e.target.dataset.field;
+            if (idx >= 0 && field) {
+                if (field === 'qty') {
+                    contentsData[idx][field] = parseInt(e.target.value) || 1;
+                } else {
+                    contentsData[idx][field] = e.target.value;
+                }
+                syncContentsJson();
+            }
+        });
+
+        document.getElementById('addContentBtn').addEventListener('click', function () {
+            contentsData.push({ name: '', name_ar: '', qty: 1 });
+            renderContents();
+        });
+
+        // Options Builder
+        const optionsContainer = document.getElementById('optionsBuilder');
+        const optionsJsonInput = document.getElementById('optionsJson');
+
+        function renderOptions() {
+            optionsContainer.innerHTML = '';
+            optionsData.forEach(function (item, idx) {
+                const row = document.createElement('div');
+                row.className = 'builder-row';
+                row.innerHTML = `
+                <input type="text" class="form-control" placeholder="Name (EN)" value="${escapeHtml(item.name || '')}" data-field="name" data-idx="${idx}">
+                <input type="text" class="form-control" placeholder="Name (AR)" dir="rtl" value="${escapeHtml(item.name_ar || '')}" data-field="name_ar" data-idx="${idx}">
+                <input type="number" class="form-control builder-price" placeholder="Price" step="0.5" min="0" value="${item.price || 0}" data-field="price" data-idx="${idx}">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeOption(${idx})"><i class="bi bi-trash"></i></button>
+            `;
+                optionsContainer.appendChild(row);
+            });
+            syncOptionsJson();
+        }
+
+        function syncOptionsJson() {
+            optionsJsonInput.value = JSON.stringify(optionsData);
+        }
+
+        window.removeOption = function (idx) {
+            optionsData.splice(idx, 1);
+            renderOptions();
+        };
+
+        optionsContainer.addEventListener('input', function (e) {
+            const idx = parseInt(e.target.dataset.idx);
+            const field = e.target.dataset.field;
+            if (idx >= 0 && field) {
+                if (field === 'price') {
+                    optionsData[idx][field] = parseFloat(e.target.value) || 0;
+                } else {
+                    optionsData[idx][field] = e.target.value;
+                }
+                syncOptionsJson();
+            }
+        });
+
+        document.getElementById('addOptionBtn').addEventListener('click', function () {
+            optionsData.push({ name: '', name_ar: '', price: 0 });
+            renderOptions();
+        });
+
+        // Utility
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // On form submit, sync JSON fields
+        document.getElementById('productForm').addEventListener('submit', function () {
+            syncContentsJson();
+            syncOptionsJson();
+        });
+
+        // Initial render
+        renderContents();
+        renderOptions();
+    })();
+</script>
+{% endblock %}

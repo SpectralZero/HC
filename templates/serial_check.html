@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}{% if lang == 'ar' %}التحقق من الرقم التسلسلي{% else %}Serial Verification{% endif %} - {{
+business_name }}{% endblock %}
+
+{% block body_class %}page-serial{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="serial-card">
+        <!-- Header -->
+        <header class="serial-header">
+            <div class="serial-icon">
+                <i class="bi bi-shield-lock"></i>
+            </div>
+            <h1 class="serial-title">
+                {% if lang == 'ar' %}
+                التحقق من صندوقك
+                {% else %}
+                Verify Your Box
+                {% endif %}
+            </h1>
+            <p class="serial-subtitle">
+                {% if lang == 'ar' %}
+                أدخل آخر 4 أرقام من الرقم التسلسلي الموجود داخل الصندوق
+                {% else %}
+                Enter the last 4 digits of the serial number found inside your box
+                {% endif %}
+            </p>
+        </header>
+
+        <!-- Serial Form -->
+        <div class="serial-form-wrapper">
+            {% if locked_out %}
+            <!-- Lockout State -->
+            <div class="lockout-alert">
+                <div class="lockout-icon">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <h3 class="lockout-title">
+                    {% if lang == 'ar' %}
+                    تم الحظر مؤقتاً
+                    {% else %}
+                    Temporarily Locked
+                    {% endif %}
+                </h3>
+                <p class="lockout-message">
+                    {% if lang == 'ar' %}
+                    لقد تجاوزت الحد الأقصى من المحاولات. يرجى الانتظار قبل المحاولة مرة أخرى.
+                    {% else %}
+                    You've exceeded the maximum number of attempts. Please wait before trying again.
+                    {% endif %}
+                </p>
+                <div class="lockout-timer" data-seconds="{{ lockout_remaining }}">
+                    <span class="timer-value">{{ lockout_remaining // 60 }}:{{ '%02d' % (lockout_remaining % 60)
+                        }}</span>
+                    <span class="timer-label">
+                        {% if lang == 'ar' %}المتبقي{% else %}remaining{% endif %}
+                    </span>
+                </div>
+            </div>
+            {% else %}
+            <form method="POST" class="serial-form" id="serial-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                {% if error %}
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    {{ error }}
+                </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label for="serial" class="form-label visually-hidden">
+                        {% if lang == 'ar' %}الرقم التسلسلي{% else %}Serial Number{% endif %}
+                    </label>
+
+                    <!-- Digit Inputs -->
+                    <div class="digit-inputs" dir="ltr">
+                        <input type="text" class="digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric"
+                            data-index="0" aria-label="Digit 1" autofocus>
+                        <input type="text" class="digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric"
+                            data-index="1" aria-label="Digit 2">
+                        <input type="text" class="digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric"
+                            data-index="2" aria-label="Digit 3">
+                        <input type="text" class="digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric"
+                            data-index="3" aria-label="Digit 4">
+                    </div>
+
+                    <!-- Hidden input to submit -->
+                    <input type="hidden" name="serial" id="serial-hidden">
+                </div>
+
+                {% if attempts_remaining is defined and attempts_remaining < 5 %} <p class="attempts-warning">
+                    <i class="bi bi-exclamation-circle"></i>
+                    {% if lang == 'ar' %}
+                    المحاولات المتبقية: {{ attempts_remaining }}
+                    {% else %}
+                    Attempts remaining: {{ attempts_remaining }}
+                    {% endif %}
+                    </p>
+                    {% endif %}
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100" id="verify-btn">
+                        <i class="bi bi-check-circle"></i>
+                        {% if lang == 'ar' %}تحقق{% else %}Verify{% endif %}
+                    </button>
+            </form>
+            {% endif %}
+        </div>
+
+        <!-- Help Section -->
+        <div class="serial-help">
+            <details class="help-accordion">
+                <summary class="help-toggle">
+                    <i class="bi bi-question-circle"></i>
+                    {% if lang == 'ar' %}
+                    أين أجد الرقم التسلسلي؟
+                    {% else %}
+                    Where do I find the serial number?
+                    {% endif %}
+                </summary>
+                <div class="help-content">
+                    <p>
+                        {% if lang == 'ar' %}
+                        ابحث عن الملصق داخل غطاء الصندوق. الرقم التسلسلي مكون من 8 أرقام، أدخل فقط آخر 4 أرقام.
+                        {% else %}
+                        Look for the sticker inside the box lid. The serial number is 8 digits long - enter only the
+                        last 4 digits.
+                        {% endif %}
+                    </p>
+                    <div class="help-image">
+                        <i class="bi bi-box-seam"></i>
+                        <span class="serial-example">XXXX-<strong>1234</strong></span>
+                    </div>
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        const form = document.getElementById('serial-form');
+        const digits = document.querySelectorAll('.digit-input');
+        const hiddenInput = document.getElementById('serial-hidden');
+        const verifyBtn = document.getElementById('verify-btn');
+
+        if (!form) return;
+
+        // Handle digit input navigation
+        digits.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                const value = e.target.value.replace(/[^0-9]/g, '');
+                e.target.value = value;
+
+                // Move to next input
+                if (value && index < digits.length - 1) {
+                    digits[index + 1].focus();
+                }
+
+                updateHiddenInput();
+            });
+
+            input.addEventListener('keydown', (e) => {
+                // Handle backspace to go to previous
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    digits[index - 1].focus();
+                }
+
+                // Handle arrow keys
+                if (e.key === 'ArrowLeft' && index > 0) {
+                    digits[index - 1].focus();
+                }
+                if (e.key === 'ArrowRight' && index < digits.length - 1) {
+                    digits[index + 1].focus();
+                }
+            });
+
+            // Handle paste
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const paste = (e.clipboardData || window.clipboardData).getData('text');
+                const numbers = paste.replace(/[^0-9]/g, '').slice(0, 4);
+
+                numbers.split('').forEach((num, i) => {
+                    if (digits[i]) {
+                        digits[i].value = num;
+                    }
+                });
+
+                if (numbers.length === 4) {
+                    digits[3].focus();
+                }
+
+                updateHiddenInput();
+            });
+        });
+
+        function updateHiddenInput() {
+            const value = Array.from(digits).map(d => d.value).join('');
+            hiddenInput.value = value;
+
+            // Enable/disable submit based on completion
+            if (verifyBtn) {
+                verifyBtn.disabled = value.length !== 4;
+            }
+        }
+
+        // Form validation
+        form.addEventListener('submit', (e) => {
+            const value = hiddenInput.value;
+            if (value.length !== 4) {
+                e.preventDefault();
+                digits[0].focus();
+            }
+        });
+
+        // Lockout timer countdown
+        const timerEl = document.querySelector('.lockout-timer');
+        if (timerEl) {
+            let seconds = parseInt(timerEl.dataset.seconds, 10);
+            const timerValue = timerEl.querySelector('.timer-value');
+
+            const interval = setInterval(() => {
+                seconds--;
+                if (seconds <= 0) {
+                    clearInterval(interval);
+                    window.location.reload();
+                } else {
+                    const mins = Math.floor(seconds / 60);
+                    const secs = seconds % 60;
+                    timerValue.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        // Initial state
+        updateHiddenInput();
+    })();
+</script>
+{% endblock %}

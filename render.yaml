@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: carebox
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: "false"
+      - key: FORCE_HTTPS
+        value: "true"
+      - key: FLASK_SECRET
+        generateValue: true
+      - key: IP_HASH_SALT
+        generateValue: true
+      - key: GOOGLE_CREDENTIALS_BASE64
+        sync: false
+      - key: SHEETS_DOC_NAME
+        value: CareBoxDB
+      - key: BUSINESS_WHATSAPP
+        sync: false
+      - key: BUSINESS_NAME
+        value: CareBox
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ENABLE_SERIAL_CHECK
+        value: "true"
+      - key: PYTHON_VERSION
+        value: "3.12.0"

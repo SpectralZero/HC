@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}{{ business_name }} - {% if lang == 'ar' %}رعاية صحية متميزة{% else %}Premium Healthcare{% endif %}{%
+endblock %}
+{% block body_class %}page-home{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <i class="bi bi-shield-check"></i>
+                {% if lang == 'ar' %}رعاية موثوقة{% else %}Trusted Care{% endif %}
+            </div>
+            <h1 class="hero-title">
+                {% if lang == 'ar' %}
+                رفيقك الصحي<br><span class="hero-highlight">الشخصي</span>
+                {% else %}
+                Your Personal<br><span class="hero-highlight">Healthcare Companion</span>
+                {% endif %}
+            </h1>
+            <p class="hero-desc">
+                {% if lang == 'ar' %}
+                صناديق رعاية صحية مخصصة مع أدلة رقمية تفاعلية. اختر صندوقك وخصصه حسب احتياجاتك.
+                {% else %}
+                Curated healthcare boxes with interactive digital guides. Choose your box and customize it to your
+                needs.
+                {% endif %}
+            </p>
+            <div class="hero-actions">
+                <a href="{{ url_for('order') }}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-bag-plus"></i>
+                    {% if lang == 'ar' %}اطلب الآن{% else %}Order Now{% endif %}
+                </a>
+                <a href="#products" class="btn btn-outline-light btn-lg">
+                    <i class="bi bi-box-seam"></i>
+                    {% if lang == 'ar' %}تصفح المنتجات{% else %}Browse Products{% endif %}
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Products Section -->
+<section class="products-section" id="products">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-heading">
+                <i class="bi bi-box-seam"></i>
+                {% if lang == 'ar' %}منتجاتنا{% else %}Our Products{% endif %}
+            </h2>
+            <p class="section-subheading">
+                {% if lang == 'ar' %}اختر الحقيبة المناسبة لاحتياجاتك{% else %}Choose the perfect box for your needs{%
+                endif %}
+            </p>
+        </div>
+
+        <div class="home-products-grid">
+            {% for p in products %}
+            {% if p.is_active %}
+            <div class="home-product-card">
+                <!-- Image / Video Thumbnail -->
+                <div class="home-product-media">
+                    {% if p.video_embed_url %}
+                    <div class="product-video-wrapper">
+                        <iframe src="{{ p.video_embed_url }}" frameborder="0" allowfullscreen loading="lazy"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            title="{{ p.title_en }}"></iframe>
+                    </div>
+                    {% elif p.image_url %}
+                    <img src="{{ p.image_url }}" alt="{{ p.title_en }}" loading="lazy">
+                    {% else %}
+                    <div class="product-media-placeholder">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="home-product-body">
+                    <span class="type-badge type-{{ p.box_type|lower }}">{{ p.box_type }}</span>
+                    <h3 class="home-product-title">
+                        {% if lang == 'ar' %}{{ p.title_ar or p.title_en }}{% else %}{{ p.title_en }}{% endif %}
+                    </h3>
+
+                    <!-- Contents Preview -->
+                    {% if p.contents_parsed and p.contents_parsed|length > 0 %}
+                    <div class="home-product-contents">
+                        <small class="contents-label">
+                            <i class="bi bi-list-check"></i>
+                            {% if lang == 'ar' %}محتويات الحقيبة{% else %}What's Inside{% endif %}
+                        </small>
+                        <ul class="contents-preview-list">
+                            {% for item in p.contents_parsed[:4] %}
+                            <li>
+                                <i class="bi bi-check2"></i>
+                                {% if lang == 'ar' %}{{ item.name_ar or item.name }}{% else %}{{ item.name }}{% endif %}
+                                <span class="item-qty">× {{ item.qty|default(1) }}</span>
+                            </li>
+                            {% endfor %}
+                            {% if p.contents_parsed|length > 4 %}
+                            <li class="more-items">
+                                +{{ p.contents_parsed|length - 4 }} {% if lang == 'ar' %}عناصر أخرى{% else %}more
+                                items{% endif %}
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Options Preview -->
+                    {% if p.options_parsed and p.options_parsed|length > 0 %}
+                    <div class="home-product-options">
+                        <small class="options-label">
+                            <i class="bi bi-puzzle"></i>
+                            {% if lang == 'ar' %}إضافات متاحة{% else %}Add-ons Available{% endif %}
+                        </small>
+                        <div class="options-tags">
+                            {% for opt in p.options_parsed[:3] %}
+                            <span class="option-tag">
+                                {% if lang == 'ar' %}{{ opt.name_ar or opt.name }}{% else %}{{ opt.name }}{% endif %}
+                                (+{{ opt.price }} JOD)
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="home-product-footer">
+                        <span class="home-product-price">{{ p.price }} JOD</span>
+                        <a href="{{ url_for('order', bag_id=p.bag_id) }}" class="btn btn-primary">
+                            <i class="bi bi-bag-plus"></i>
+                            {% if lang == 'ar' %}اطلب الآن{% else %}Order Now{% endif %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        {% if not products %}
+        <div class="no-products-state">
+            <i class="bi bi-box-seam" style="font-size:3rem;color:var(--color-gray-400)"></i>
+            <p>{% if lang == 'ar' %}لا توجد منتجات حالياً{% else %}No products available yet{% endif %}</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- How It Works -->
+<section class="how-it-works">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-heading">
+                {% if lang == 'ar' %}كيف يعمل{% else %}How It Works{% endif %}
+            </h2>
+        </div>
+        <div class="steps-row">
+            <div class="hiw-step">
+                <div class="hiw-icon"><i class="bi bi-box-seam"></i></div>
+                <h4>{% if lang == 'ar' %}اختر صندوقك{% else %}Choose Your Box{% endif %}</h4>
+                <p>{% if lang == 'ar' %}تصفح مجموعتنا واختر{% else %}Browse our collection and pick{% endif %}</p>
+            </div>
+            <div class="hiw-step">
+                <div class="hiw-icon"><i class="bi bi-sliders"></i></div>
+                <h4>{% if lang == 'ar' %}خصصه{% else %}Customize It{% endif %}</h4>
+                <p>{% if lang == 'ar' %}أضف أو أزل حسب حاجتك{% else %}Add or remove items as needed{% endif %}</p>
+            </div>
+            <div class="hiw-step">
+                <div class="hiw-icon"><i class="bi bi-whatsapp"></i></div>
+                <h4>{% if lang == 'ar' %}اطلب عبر واتساب{% else %}Order via WhatsApp{% endif %}</h4>
+                <p>{% if lang == 'ar' %}أكد طلبك بنقرة واحدة{% else %}Confirm your order with one click{% endif %}</p>
+            </div>
+            <div class="hiw-step">
+                <div class="hiw-icon"><i class="bi bi-qr-code"></i></div>
+                <h4>{% if lang == 'ar' %}امسح الرمز{% else %}Scan the QR{% endif %}</h4>
+                <p>{% if lang == 'ar' %}اكتشف الدليل الرقمي{% else %}Access your digital guide{% endif %}</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

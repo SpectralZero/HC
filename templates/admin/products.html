@@ -1,0 +1,111 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Products{% endblock %}
+
+{% block content %}
+<div class="admin-page-header">
+    <div>
+        <h1><i class="bi bi-box-seam"></i> Products</h1>
+        <p class="text-muted">Manage CareBox products and bag contents</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('admin_product_add') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Add Product
+        </a>
+    </div>
+</div>
+
+<!-- Search/Filter -->
+<div class="products-filter">
+    <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" id="productSearch" placeholder="Search products..." class="form-control">
+    </div>
+</div>
+
+{% if products %}
+<div class="products-table-wrapper">
+    <table class="products-table" id="productsTable">
+        <thead>
+            <tr>
+                <th>Image</th>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Price</th>
+                <th>Contents</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in products %}
+            <tr class="{{ 'inactive' if not p.is_active }}"
+                data-search="{{ p.bag_id }} {{ p.title_en }} {{ p.title_ar }} {{ p.box_type }}">
+                <td>
+                    {% if p.image_url %}
+                    <img src="{{ p.image_url }}" alt="" class="product-thumb">
+                    {% else %}
+                    <div class="product-thumb-placeholder"><i class="bi bi-image"></i></div>
+                    {% endif %}
+                </td>
+                <td><code>{{ p.bag_id }}</code></td>
+                <td>
+                    <strong>{{ p.title_en }}</strong>
+                    {% if p.title_ar %}<br><small class="text-muted">{{ p.title_ar }}</small>{% endif %}
+                </td>
+                <td><span class="type-badge type-{{ p.box_type|lower }}">{{ p.box_type }}</span></td>
+                <td><strong>{{ p.price }} JOD</strong></td>
+                <td>
+                    <span class="badge bg-secondary">{{ p.contents_count }} items</span>
+                </td>
+                <td>
+                    {% if p.is_active %}
+                    <span class="status-badge status-active"><i class="bi bi-check-circle-fill"></i> Active</span>
+                    {% else %}
+                    <span class="status-badge status-inactive"><i class="bi bi-x-circle-fill"></i> Inactive</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="{{ url_for('admin_product_edit', bag_id=p.bag_id) }}"
+                            class="btn btn-sm btn-outline-primary" title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{{ url_for('admin_product_toggle', bag_id=p.bag_id) }}"
+                            class="btn btn-sm btn-outline-secondary" title="Toggle Active">
+                            <i class="bi bi-toggle-{{ 'on' if p.is_active else 'off' }}"></i>
+                        </a>
+                        <a href="{{ url_for('admin_product_delete', bag_id=p.bag_id) }}"
+                            class="btn btn-sm btn-outline-danger" title="Delete"
+                            onclick="return confirm('Delete {{ p.bag_id }}?')">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="bi bi-box-seam" style="font-size:3rem"></i>
+    <h3>No products yet</h3>
+    <p>Add your first product to get started.</p>
+    <a href="{{ url_for('admin_product_add') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Product</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('productSearch').addEventListener('input', function (e) {
+        const query = e.target.value.toLowerCase();
+        document.querySelectorAll('#productsTable tbody tr').forEach(function (row) {
+            const text = row.getAttribute('data-search').toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}

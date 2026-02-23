@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bag.title }} - {{ business_name }}{% endblock %}
+
+{% block body_class %}page-guide{% endblock %}
+
+{% block content %}
+<article class="guide-container">
+    <!-- Hero Section -->
+    <header class="guide-hero">
+        {% if bag.image_url %}
+        <div class="guide-image">
+            <img src="{{ bag.image_url }}" alt="{{ bag.title }}" loading="lazy">
+        </div>
+        {% endif %}
+        <div class="guide-hero-content">
+            <span class="guide-badge">
+                {% if bag.box_type == 'travel' %}🛫{% elif bag.box_type == 'recovery' %}💊{% elif bag.box_type == 'mom'
+                %}👶{% else %}🕌{% endif %}
+                {{ bag.box_type | capitalize }}
+            </span>
+            <h1 class="guide-title">{{ bag.title }}</h1>
+            {% if bag.price %}
+            <p class="guide-price">{{ bag.price }} JOD</p>
+            {% endif %}
+            {% if bag.bag_id %}
+            <p class="guide-id">ID: {{ bag.bag_id }}</p>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- Video Section -->
+    {% if bag.video_url %}
+    <section class="guide-section">
+        <h2 class="section-title">
+            <i class="bi bi-play-circle"></i>
+            {% if lang == 'ar' %}شاهد الفيديو{% else %}Watch Video{% endif %}
+        </h2>
+        <div class="video-wrapper">
+            <iframe src="{{ bag.video_url }}" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen loading="lazy"></iframe>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Tips Section -->
+    {% if bag.tips %}
+    <section class="guide-section">
+        <h2 class="section-title">
+            <i class="bi bi-lightbulb"></i>
+            {% if lang == 'ar' %}نصائح مهمة{% else %}Important Tips{% endif %}
+        </h2>
+        <ul class="tips-list">
+            {% for tip in bag.tips %}
+            <li class="tip-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>{{ tip }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
+    <!-- Customization Options -->
+    {% if bag.options %}
+    <section class="guide-section">
+        <h2 class="section-title">
+            <i class="bi bi-plus-circle"></i>
+            {% if lang == 'ar' %}خيارات إضافية{% else %}Add-on Options{% endif %}
+        </h2>
+        <div class="options-grid">
+            {% for opt in bag.options %}
+            <div class="option-card">
+                <div class="option-info">
+                    <span class="option-name">{{ opt.name_ar if lang == 'ar' and opt.name_ar else opt.name }}</span>
+                </div>
+                <span class="option-price">+{{ opt.price }} JOD</span>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Contact Section -->
+    <section class="guide-section guide-contact">
+        <h2 class="section-title">
+            <i class="bi bi-telephone"></i>
+            {% if lang == 'ar' %}تحتاج مساعدة؟{% else %}Need Help?{% endif %}
+        </h2>
+        <p>
+            {% if lang == 'ar' %}
+            تواصل معنا عبر واتساب للاستفسار أو طلب صندوق جديد
+            {% else %}
+            Contact us via WhatsApp for questions or to order a new box
+            {% endif %}
+        </p>
+        <a href="https://wa.me/{{ business_whatsapp }}" class="btn btn-success btn-lg" target="_blank">
+            <i class="bi bi-whatsapp"></i>
+            {% if lang == 'ar' %}تواصل عبر واتساب{% else %}Chat on WhatsApp{% endif %}
+        </a>
+    </section>
+
+    <!-- Order Another Box -->
+    <section class="guide-section">
+        <a href="{{ url_for('order') }}" class="btn btn-primary btn-lg w-100">
+            <i class="bi bi-bag-plus"></i>
+            {% if lang == 'ar' %}اطلب صندوق آخر{% else %}Order Another Box{% endif %}
+        </a>
+    </section>
+</article>
+{% endblock %}

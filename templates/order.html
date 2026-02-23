@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+
+{% block title %}{% if lang == 'ar' %}اطلب صندوقك{% else %}Order Your Box{% endif %} - {{ business_name }}{% endblock %}
+{% block body_class %}page-order{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="order-page">
+        <!-- Header -->
+        <header class="order-page-header">
+            <h1 class="order-page-title">
+                <i class="bi bi-bag-plus"></i>
+                {% if lang == 'ar' %}اطلب صندوقك{% else %}Order Your Box{% endif %}
+            </h1>
+            <p class="order-page-subtitle">
+                {% if lang == 'ar' %}اختر صندوقك، خصصه، واطلب مباشرة عبر واتساب{% else %}Select your box, customize it,
+                and order directly via WhatsApp{% endif %}
+            </p>
+        </header>
+
+        <!-- Progress Steps -->
+        <div class="order-steps">
+            <div class="order-step active" data-step="1">
+                <span class="step-number">1</span>
+                <span class="step-label">{% if lang == 'ar' %}اختر المنتج{% else %}Select Product{% endif %}</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="order-step" data-step="2">
+                <span class="step-number">2</span>
+                <span class="step-label">{% if lang == 'ar' %}خصص{% else %}Customize{% endif %}</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="order-step" data-step="3">
+                <span class="step-number">3</span>
+                <span class="step-label">{% if lang == 'ar' %}بياناتك{% else %}Your Details{% endif %}</span>
+            </div>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('order') }}" class="order-form" id="orderForm">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="bag_id" id="selectedBagId" value="">
+            <input type="hidden" name="box_type" id="selectedBoxType" value="">
+            <input type="hidden" name="selected_addons" id="selectedAddonsJson" value="[]">
+            <input type="hidden" name="bag_contents" id="bagContentsJson" value="[]">
+            <!-- Honeypot -->
+            <div style="display:none"><input type="text" name="website" tabindex="-1" autocomplete="off"></div>
+
+            <!-- STEP 1: Select Product -->
+            <div class="order-step-panel active" id="step1Panel">
+                <h2 class="step-panel-title">
+                    {% if lang == 'ar' %}اختر صندوقك{% else %}Choose Your Box{% endif %}
+                </h2>
+
+                <div class="products-grid">
+                    {% for p in products %}
+                    {% if p.is_active %}
+                    <div class="product-select-card" data-bag-id="{{ p.bag_id }}" data-box-type="{{ p.box_type }}"
+                        data-price="{{ p.price }}">
+                        {% if p.image_url %}
+                        <div class="product-select-image">
+                            <img src="{{ p.image_url }}" alt="{{ p.title_en }}" loading="lazy">
+                        </div>
+                        {% else %}
+                        <div class="product-select-image product-select-image-placeholder">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                        {% endif %}
+                        <div class="product-select-info">
+                            <h3 class="product-select-title">
+                                {% if lang == 'ar' %}{{ p.title_ar or p.title_en }}{% else %}{{ p.title_en }}{% endif %}
+                            </h3>
+                            <span class="product-select-type type-badge type-{{ p.box_type|lower }}">{{ p.box_type
+                                }}</span>
+                            {% if p.contents_parsed and p.contents_parsed|length > 0 %}
+                            <div class="product-select-contents">
+                                <small>{% if lang == 'ar' %}يحتوي على{% else %}Includes{% endif %}:</small>
+                                <ul>
+                                    {% for item in p.contents_parsed[:3] %}
+                                    <li>{% if lang == 'ar' %}{{ item.name_ar or item.name }}{% else %}{{ item.name }}{%
+                                        endif %} × {{ item.qty|default(1) }}</li>
+                                    {% endfor %}
+                                    {% if p.contents_parsed|length > 3 %}
+                                    <li class="text-muted">+{{ p.contents_parsed|length - 3 }} {% if lang == 'ar'
+                                        %}أخرى{% else %}more{% endif %}</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                            <div class="product-select-price">{{ p.price }} JOD</div>
+                        </div>
+                        <div class="product-select-check">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="step-actions">
+                    <button type="button" class="btn btn-primary btn-lg" id="toStep2Btn" disabled>
+                        {% if lang == 'ar' %}التالي: التخصيص{% else %}Next: Customize{% endif %} <i
+                            class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 2: Customize -->
+            <div class="order-step-panel" id="step2Panel">
+                <h2 class="step-panel-title">
+                    {% if lang == 'ar' %}خصص صندوقك{% else %}Customize Your Box{% endif %}
+                </h2>
+
+                <!-- Bag contents -->
+                <div class="customize-section">
+                    <h3><i class="bi bi-list-check"></i> {% if lang == 'ar' %}محتويات الحقيبة{% else %}Bag Contents{%
+                        endif %}</h3>
+                    <div id="contentsChecklist" class="contents-checklist">
+                        <!-- Populated by JS -->
+                        <div class="loading-placeholder">{% if lang == 'ar' %}اختر منتج أولاً{% else %}Select a product
+                            first{% endif %}</div>
+                    </div>
+                </div>
+
+                <!-- Add-on options -->
+                <div class="customize-section" id="addonsSection" style="display:none">
+                    <h3><i class="bi bi-puzzle"></i> {% if lang == 'ar' %}إضافات{% else %}Add-ons{% endif %}</h3>
+                    <div id="addonsList" class="addons-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Live Price -->
+                <div class="price-summary" id="priceSummary">
+                    <div class="price-row">
+                        <span>{% if lang == 'ar' %}السعر الأساسي{% else %}Base Price{% endif %}</span>
+                        <span id="basePriceDisplay">0 JOD</span>
+                    </div>
+                    <div class="price-row" id="addonsRow" style="display:none">
+                        <span>{% if lang == 'ar' %}الإضافات{% else %}Add-ons{% endif %}</span>
+                        <span id="addonsPriceDisplay">+0 JOD</span>
+                    </div>
+                    <div class="price-row price-total">
+                        <span>{% if lang == 'ar' %}الإجمالي{% else %}Total{% endif %}</span>
+                        <span id="totalPriceDisplay">0 JOD</span>
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <button type="button" class="btn btn-outline-secondary btn-lg" id="backToStep1Btn">
+                        <i class="bi bi-arrow-left"></i> {% if lang == 'ar' %}رجوع{% else %}Back{% endif %}
+                    </button>
+                    <button type="button" class="btn btn-primary btn-lg" id="toStep3Btn">
+                        {% if lang == 'ar' %}التالي: بياناتك{% else %}Next: Your Details{% endif %} <i
+                            class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 3: Customer Details -->
+            <div class="order-step-panel" id="step3Panel">
+                <h2 class="step-panel-title">
+                    {% if lang == 'ar' %}بياناتك{% else %}Your Details{% endif %}
+                </h2>
+
+                <div class="details-form">
+                    <div class="form-group">
+                        <label for="name">{% if lang == 'ar' %}الاسم{% else %}Name{% endif %} <span
+                                class="required">*</span></label>
+                        <input type="text" id="name" name="name" class="form-control" required maxlength="60"
+                            placeholder="{% if lang == 'ar' %}اسمك الكامل{% else %}Your full name{% endif %}">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">{% if lang == 'ar' %}رقم الهاتف{% else %}Phone Number{% endif %} <span
+                                class="required">*</span></label>
+                        <input type="tel" id="phone" name="phone" class="form-control" required maxlength="20"
+                            placeholder="{% if lang == 'ar' %}مثال: 0791234567{% else %}e.g. 0791234567{% endif %}"
+                            pattern="[\+]?[0-9\-\s]{7,20}">
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">{% if lang == 'ar' %}ملاحظات{% else %}Notes{% endif %} <small
+                                class="text-muted">({% if lang == 'ar' %}اختياري{% else %}optional{% endif
+                                %})</small></label>
+                        <textarea id="notes" name="notes" class="form-control" rows="3" maxlength="200"
+                            placeholder="{% if lang == 'ar' %}أي ملاحظات إضافية{% else %}Any additional notes{% endif %}"></textarea>
+                    </div>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="order-summary" id="orderSummary">
+                    <h4>{% if lang == 'ar' %}ملخص الطلب{% else %}Order Summary{% endif %}</h4>
+                    <div id="summaryContent">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <button type="button" class="btn btn-outline-secondary btn-lg" id="backToStep2Btn">
+                        <i class="bi bi-arrow-left"></i> {% if lang == 'ar' %}رجوع{% else %}Back{% endif %}
+                    </button>
+                    <button type="submit" class="btn btn-success btn-lg" id="submitOrderBtn">
+                        <i class="bi bi-whatsapp"></i>
+                        {% if lang == 'ar' %}أرسل الطلب عبر واتساب{% else %}Send Order via WhatsApp{% endif %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        'use strict';
+
+        const lang = '{{ lang }}';
+        let selectedProduct = null;
+        let productData = null;  // From API
+        let selectedAddons = [];
+        let currentStep = 1;
+        const preselect = '{{ preselect|default("") }}';
+
+        // Elements
+        const steps = document.querySelectorAll('.order-step');
+        const panels = document.querySelectorAll('.order-step-panel');
+        const toStep2Btn = document.getElementById('toStep2Btn');
+        const toStep3Btn = document.getElementById('toStep3Btn');
+        const backToStep1Btn = document.getElementById('backToStep1Btn');
+        const backToStep2Btn = document.getElementById('backToStep2Btn');
+
+        // Step navigation
+        function goToStep(step) {
+            currentStep = step;
+            steps.forEach(function (s, i) {
+                s.classList.toggle('active', i < step);
+                s.classList.toggle('completed', i < step - 1);
+            });
+            panels.forEach(function (p, i) {
+                p.classList.toggle('active', i === step - 1);
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        toStep2Btn.addEventListener('click', function () { goToStep(2); });
+        toStep3Btn.addEventListener('click', function () { goToStep(3); updateSummary(); });
+        backToStep1Btn.addEventListener('click', function () { goToStep(1); });
+        backToStep2Btn.addEventListener('click', function () { goToStep(2); });
+
+        // Product selection
+        document.querySelectorAll('.product-select-card').forEach(function (card) {
+            card.addEventListener('click', function () {
+                document.querySelectorAll('.product-select-card').forEach(function (c) { c.classList.remove('selected'); });
+                card.classList.add('selected');
+
+                const bagId = card.dataset.bagId;
+                const boxType = card.dataset.boxType;
+                const price = parseFloat(card.dataset.price) || 0;
+
+                document.getElementById('selectedBagId').value = bagId;
+                document.getElementById('selectedBoxType').value = boxType;
+
+                selectedProduct = { bagId: bagId, boxType: boxType, price: price };
+                toStep2Btn.disabled = false;
+
+                // Fetch full product details via API
+                fetchProductDetails(bagId);
+            });
+        });
+
+        function fetchProductDetails(bagId) {
+            fetch('/api/product/' + bagId)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    productData = data;
+                    renderCustomizeStep(data);
+                })
+                .catch(function (e) {
+                    console.error('Failed to fetch product:', e);
+                });
+        }
+
+        function renderCustomizeStep(data) {
+            const checklist = document.getElementById('contentsChecklist');
+            const addonsList = document.getElementById('addonsList');
+            const addonsSection = document.getElementById('addonsSection');
+
+            // Render contents
+            const contents = data.contents || [];
+            if (contents.length > 0) {
+                let html = '';
+                contents.forEach(function (item, idx) {
+                    const itemName = lang === 'ar' ? (item.name_ar || item.name) : item.name;
+                    html += '<label class="content-item">' +
+                        '<input type="checkbox" checked data-idx="' + idx + '">' +
+                        '<span class="content-item-name">' + escapeHtml(itemName) + '</span>' +
+                        '<span class="content-item-qty">× ' + (item.qty || 1) + '</span>' +
+                        '</label>';
+                });
+                checklist.innerHTML = html;
+            } else {
+                checklist.innerHTML = '<p class="text-muted">' + (lang === 'ar' ? 'لا تفاصيل متاحة لهذا المنتج' : 'No contents details available for this product') + '</p>';
+            }
+
+            // Render add-ons
+            const options = data.options || [];
+            if (options.length > 0) {
+                addonsSection.style.display = '';
+                let html = '';
+                options.forEach(function (opt, idx) {
+                    const optName = lang === 'ar' ? (opt.name_ar || opt.name) : opt.name;
+                    html += '<label class="addon-item">' +
+                        '<input type="checkbox" data-idx="' + idx + '" data-price="' + (opt.price || 0) + '">' +
+                        '<span class="addon-item-name">' + escapeHtml(optName) + '</span>' +
+                        '<span class="addon-item-price">+' + (opt.price || 0) + ' JOD</span>' +
+                        '</label>';
+                });
+                addonsList.innerHTML = html;
+
+                // Addon change handler
+                addonsList.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+                    cb.addEventListener('change', updatePrice);
+                });
+            } else {
+                addonsSection.style.display = 'none';
+                addonsList.innerHTML = '';
+            }
+
+            // Update price display
+            updatePrice();
+        }
+
+        function updatePrice() {
+            if (!productData) return;
+
+            const basePrice = productData.price || 0;
+            let addonsTotal = 0;
+            selectedAddons = [];
+
+            document.querySelectorAll('#addonsList input:checked').forEach(function (cb) {
+                const idx = parseInt(cb.dataset.idx);
+                const price = parseFloat(cb.dataset.price) || 0;
+                addonsTotal += price;
+                if (productData.options && productData.options[idx]) {
+                    selectedAddons.push(productData.options[idx]);
+                }
+            });
+
+            const total = basePrice + addonsTotal;
+
+            document.getElementById('basePriceDisplay').textContent = basePrice.toFixed(2) + ' JOD';
+            document.getElementById('addonsPriceDisplay').textContent = '+' + addonsTotal.toFixed(2) + ' JOD';
+            document.getElementById('addonsRow').style.display = addonsTotal > 0 ? '' : 'none';
+            document.getElementById('totalPriceDisplay').textContent = total.toFixed(2) + ' JOD';
+
+            // Update hidden fields
+            document.getElementById('selectedAddonsJson').value = JSON.stringify(selectedAddons);
+
+            // Build bag contents from checked items
+            const bagContents = [];
+            document.querySelectorAll('#contentsChecklist input:checked').forEach(function (cb) {
+                const idx = parseInt(cb.dataset.idx);
+                if (productData.contents && productData.contents[idx]) {
+                    bagContents.push(productData.contents[idx]);
+                }
+            });
+            document.getElementById('bagContentsJson').value = JSON.stringify(bagContents);
+        }
+
+        // Also update on content checkbox change
+        document.getElementById('contentsChecklist').addEventListener('change', updatePrice);
+
+        function updateSummary() {
+            if (!productData) return;
+
+            const name = document.getElementById('name').value || '-';
+            const title = lang === 'ar' ? (productData.title_ar || productData.title_en) : productData.title_en;
+            const total = parseFloat(document.getElementById('totalPriceDisplay').textContent) || 0;
+
+            let html = '<div class="summary-row"><span>' + (lang === 'ar' ? 'المنتج' : 'Product') + '</span><strong>' + escapeHtml(title) + '</strong></div>';
+            html += '<div class="summary-row"><span>' + (lang === 'ar' ? 'النوع' : 'Type') + '</span><span class="type-badge type-' + productData.box_type + '">' + productData.box_type + '</span></div>';
+
+            if (selectedAddons.length > 0) {
+                html += '<div class="summary-row"><span>' + (lang === 'ar' ? 'الإضافات' : 'Add-ons') + '</span><span>' + selectedAddons.length + ' ' + (lang === 'ar' ? 'إضافة' : 'selected') + '</span></div>';
+            }
+
+            html += '<div class="summary-row summary-total"><span>' + (lang === 'ar' ? 'الإجمالي' : 'Total') + '</span><strong>' + document.getElementById('totalPriceDisplay').textContent + '</strong></div>';
+
+            document.getElementById('summaryContent').innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Auto-select preselected product
+        if (preselect) {
+            const card = document.querySelector('.product-select-card[data-bag-id="' + preselect + '"]');
+            if (card) {
+                card.click();
+            }
+        }
+
+        // Form validation before submit
+        document.getElementById('orderForm').addEventListener('submit', function (e) {
+            if (!document.getElementById('selectedBagId').value) {
+                e.preventDefault();
+                alert(lang === 'ar' ? 'يرجى اختيار منتج' : 'Please select a product');
+                goToStep(1);
+                return;
+            }
+            if (!document.getElementById('name').value.trim()) {
+                e.preventDefault();
+                alert(lang === 'ar' ? 'يرجى إدخال اسمك' : 'Please enter your name');
+                return;
+            }
+            if (!document.getElementById('phone').value.trim()) {
+                e.preventDefault();
+                alert(lang === 'ar' ? 'يرجى إدخال رقم الهاتف' : 'Please enter your phone number');
+                return;
+            }
+            // Final sync of hidden fields
+            updatePrice();
+        });
+    })();
+</script>
+{% endblock %}

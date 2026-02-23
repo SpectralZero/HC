@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}{% if lang == 'ar' %}غير مصرح{% else %}Forbidden{% endif %} - {{ business_name }}{% endblock %}
+
+{% block body_class %}page-error{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="error-card">
+        <div class="error-code">403</div>
+        <h1 class="error-title">
+            {% if lang == 'ar' %}غير مصرح{% else %}Access Denied{% endif %}
+        </h1>
+        <p class="error-desc">
+            {% if lang == 'ar' %}
+            عذراً، ليس لديك صلاحية للوصول إلى هذه الصفحة.
+            {% else %}
+            Sorry, you don't have permission to access this page.
+            {% endif %}
+        </p>
+        <div class="error-actions">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">
+                <i class="bi bi-house"></i>
+                {% if lang == 'ar' %}العودة للرئيسية{% else %}Go Home{% endif %}
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

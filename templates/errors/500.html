@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}{% if lang == 'ar' %}خطأ في الخادم{% else %}Server Error{% endif %} - {{ business_name }}{% endblock %}
+
+{% block body_class %}page-error{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="error-card">
+        <div class="error-code">500</div>
+        <h1 class="error-title">
+            {% if lang == 'ar' %}خطأ في الخادم{% else %}Something Went Wrong{% endif %}
+        </h1>
+        <p class="error-desc">
+            {% if lang == 'ar' %}
+            عذراً، حدث خطأ غير متوقع. يرجى المحاولة لاحقاً.
+            {% else %}
+            Sorry, an unexpected error occurred. Please try again later.
+            {% endif %}
+        </p>
+        <div class="error-actions">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">
+                <i class="bi bi-house"></i>
+                {% if lang == 'ar' %}العودة للرئيسية{% else %}Go Home{% endif %}
+            </a>
+            {% if business_whatsapp %}
+            <a href="https://wa.me/{{ business_whatsapp }}" class="btn btn-outline-success" target="_blank"
+                rel="noopener">
+                <i class="bi bi-whatsapp"></i>
+                {% if lang == 'ar' %}تواصل معنا{% else %}Report Issue{% endif %}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

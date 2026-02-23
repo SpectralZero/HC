@@ -1,0 +1,110 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="admin-page-header">
+    <h1><i class="bi bi-speedometer2"></i> Dashboard</h1>
+    <p class="text-muted">Overview of CareBox activity</p>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid">
+    <div class="stat-card stat-scans">
+        <div class="stat-icon"><i class="bi bi-qr-code-scan"></i></div>
+        <div class="stat-content">
+            <span class="stat-value">{{ stats.total_scans }}</span>
+            <span class="stat-label">Total Scans</span>
+        </div>
+    </div>
+    <div class="stat-card stat-orders">
+        <div class="stat-icon"><i class="bi bi-bag-check"></i></div>
+        <div class="stat-content">
+            <span class="stat-value">{{ stats.total_orders }}</span>
+            <span class="stat-label">Orders</span>
+        </div>
+    </div>
+    <div class="stat-card stat-verified">
+        <div class="stat-icon"><i class="bi bi-shield-check"></i></div>
+        <div class="stat-content">
+            <span class="stat-value">{{ stats.serial_verifications }}</span>
+            <span class="stat-label">Verified</span>
+        </div>
+    </div>
+    <div class="stat-card stat-failed">
+        <div class="stat-icon"><i class="bi bi-shield-x"></i></div>
+        <div class="stat-content">
+            <span class="stat-value">{{ stats.serial_failures }}</span>
+            <span class="stat-label">Failed Checks</span>
+        </div>
+    </div>
+    <div class="stat-card stat-products">
+        <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
+        <div class="stat-content">
+            <span class="stat-value">{{ stats.total_products }}</span>
+            <span class="stat-label">Products</span>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions">
+    <h3 class="section-title"><i class="bi bi-lightning"></i> Quick Actions</h3>
+    <div class="actions-grid">
+        <a href="{{ url_for('admin_product_add') }}" class="action-card">
+            <i class="bi bi-plus-circle"></i>
+            <span>Add Product</span>
+        </a>
+        <a href="{{ url_for('admin_orders') }}" class="action-card">
+            <i class="bi bi-receipt"></i>
+            <span>View Orders</span>
+        </a>
+        <a href="{{ url_for('admin_products') }}" class="action-card">
+            <i class="bi bi-pencil-square"></i>
+            <span>Manage Products</span>
+        </a>
+        <a href="{{ url_for('index') }}" class="action-card" target="_blank">
+            <i class="bi bi-globe"></i>
+            <span>View Website</span>
+        </a>
+    </div>
+</div>
+
+<!-- Recent Events -->
+<div class="dashboard-section">
+    <h3 class="section-title"><i class="bi bi-clock-history"></i> Recent Events</h3>
+    {% if events %}
+    <div class="events-table-wrapper">
+        <table class="events-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Type</th>
+                    <th>Bag ID</th>
+                    <th>Box Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                <tr>
+                    <td>{{ event.timestamp }}</td>
+                    <td><span class="event-badge event-{{ event.type|lower }}">{{ event.type }}</span></td>
+                    <td>{{ event.bag_id }}</td>
+                    <td>
+                        {% if event.box_type %}
+                        <span class="type-badge type-{{ event.box_type|lower }}">{{ event.box_type }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="no-events">
+        <i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>
+        No events recorded yet
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

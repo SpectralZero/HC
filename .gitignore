@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Environment & Secrets
+.env
+service_account.json
+*.json.bak
+gcp_creds.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Testing & Cache
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+
+# Byte-compiled
+*.pyc
+
+# Logs
+*.log
+
+# Cookies
+cookies.txt
