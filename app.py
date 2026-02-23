@@ -247,11 +247,6 @@ def admin_required(f):
 def register_routes(app: Flask) -> None:
     """Register application routes."""
     
-    @app.route("/health")
-    def health():
-        """Health check endpoint for Render."""
-        return jsonify({"status": "ok"}), 200
-
     def _youtube_to_embed(url: str) -> str:
         """Convert YouTube watch/share URLs to embed format."""
         if not url:
