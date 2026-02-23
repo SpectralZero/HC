@@ -61,14 +61,21 @@ endblock %}
             <div class="home-product-card">
                 <!-- Image / Video Thumbnail -->
                 <div class="home-product-media">
-                    {% if p.video_embed_url %}
+                    {% if p.image_url %}
+                    <div class="product-image-wrapper">
+                        <img src="{{ p.image_url }}" alt="{{ p.title_en }}" loading="lazy">
+                        {% if p.video_embed_url %}
+                        <a href="{{ p.video_url }}" target="_blank" class="play-overlay" title="Watch Video">
+                            <i class="bi bi-play-circle-fill"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% elif p.video_embed_url %}
                     <div class="product-video-wrapper">
                         <iframe src="{{ p.video_embed_url }}" frameborder="0" allowfullscreen loading="lazy"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             title="{{ p.title_en }}"></iframe>
                     </div>
-                    {% elif p.image_url %}
-                    <img src="{{ p.image_url }}" alt="{{ p.title_en }}" loading="lazy">
                     {% else %}
                     <div class="product-media-placeholder">
                         <i class="bi bi-box-seam"></i>
