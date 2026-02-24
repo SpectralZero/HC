@@ -77,17 +77,6 @@
                         isValid = false;
                     }
                 });
-
-                // Check radio buttons (box type)
-                const boxTypeInputs = form.querySelectorAll('input[name="box_type"]');
-                if (boxTypeInputs.length > 0) {
-                    const isBoxTypeSelected = Array.from(boxTypeInputs).some(input => input.checked);
-                    if (!isBoxTypeSelected) {
-                        isValid = false;
-                        highlightBoxTypeError(true);
-                    }
-                }
-
                 if (!isValid) {
                     e.preventDefault();
                     // Scroll to first error
