@@ -7,7 +7,7 @@
  * - UI micro-interactions
  */
 
-(function() {
+(function () {
     'use strict';
 
     // =============================================================================
@@ -30,9 +30,10 @@
     function debounce(func, wait) {
         let timeout;
         return function executedFunction(...args) {
+            const context = this;
             const later = () => {
                 clearTimeout(timeout);
-                func(...args);
+                func.apply(context, args);
             };
             clearTimeout(timeout);
             timeout = setTimeout(later, wait);
@@ -48,35 +49,35 @@
      */
     function initFormValidation() {
         const forms = document.querySelectorAll('form.order-form');
-        
+
         forms.forEach(form => {
             const inputs = form.querySelectorAll('input[required], textarea[required]');
-            
+
             inputs.forEach(input => {
                 // Add validation on blur
-                input.addEventListener('blur', function() {
+                input.addEventListener('blur', function () {
                     validateInput(this);
                 });
-                
+
                 // Clear error on input
-                input.addEventListener('input', debounce(function() {
+                input.addEventListener('input', debounce(function () {
                     if (this.classList.contains('is-invalid')) {
                         validateInput(this);
                     }
                 }, 300));
             });
-            
+
             // Prevent submission if invalid
-            form.addEventListener('submit', function(e) {
+            form.addEventListener('submit', function (e) {
                 let isValid = true;
-                
+
                 // Validate all required inputs
                 inputs.forEach(input => {
                     if (!validateInput(input)) {
                         isValid = false;
                     }
                 });
-                
+
                 // Check radio buttons (box type)
                 const boxTypeInputs = form.querySelectorAll('input[name="box_type"]');
                 if (boxTypeInputs.length > 0) {
@@ -86,7 +87,7 @@
                         highlightBoxTypeError(true);
                     }
                 }
-                
+
                 if (!isValid) {
                     e.preventDefault();
                     // Scroll to first error
@@ -107,13 +108,13 @@
         const value = input.value.trim();
         let isValid = true;
         let errorMessage = '';
-        
+
         // Check required
         if (input.hasAttribute('required') && !value) {
             isValid = false;
             errorMessage = 'This field is required';
         }
-        
+
         // Check pattern (phone)
         if (isValid && input.type === 'tel' && input.pattern) {
             const pattern = new RegExp(input.pattern);
@@ -122,13 +123,13 @@
                 errorMessage = 'Please enter a valid phone number';
             }
         }
-        
+
         // Check maxlength
         if (isValid && input.maxLength > 0 && value.length > input.maxLength) {
             isValid = false;
             errorMessage = `Maximum ${input.maxLength} characters allowed`;
         }
-        
+
         // Update UI
         if (isValid) {
             input.classList.remove('is-invalid');
@@ -139,7 +140,7 @@
             input.classList.add('is-invalid');
             showErrorMessage(input, errorMessage);
         }
-        
+
         return isValid;
     }
 
@@ -148,14 +149,14 @@
      */
     function showErrorMessage(input, message) {
         removeErrorMessage(input);
-        
+
         const errorDiv = document.createElement('div');
         errorDiv.className = 'invalid-feedback d-block';
         errorDiv.textContent = message;
         errorDiv.style.color = '#dc3545';
         errorDiv.style.fontSize = '0.875rem';
         errorDiv.style.marginTop = '0.25rem';
-        
+
         input.parentNode.appendChild(errorDiv);
     }
 
@@ -195,12 +196,12 @@
      */
     function initBoxTypeSelection() {
         const boxTypeInputs = document.querySelectorAll('input[name="box_type"]');
-        
+
         boxTypeInputs.forEach(input => {
-            input.addEventListener('change', function() {
+            input.addEventListener('change', function () {
                 // Clear any error highlighting
                 highlightBoxTypeError(false);
-                
+
                 // Add selected animation
                 const card = this.nextElementSibling;
                 if (card) {
@@ -222,10 +223,10 @@
      */
     function initSmoothScroll() {
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
+            anchor.addEventListener('click', function (e) {
                 const href = this.getAttribute('href');
                 if (href === '#') return;
-                
+
                 const target = document.querySelector(href);
                 if (target) {
                     e.preventDefault();
@@ -247,7 +248,7 @@
      */
     function initAlertDismiss() {
         const alerts = document.querySelectorAll('.alert:not(.alert-danger)');
-        
+
         alerts.forEach(alert => {
             setTimeout(() => {
                 const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
@@ -268,7 +269,7 @@
         initBoxTypeSelection();
         initSmoothScroll();
         initAlertDismiss();
-        
+
         console.log('CareBox initialized');
     }
 
