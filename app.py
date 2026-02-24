@@ -123,6 +123,12 @@ def create_app(config_class=None) -> Flask:
                 app.config[attr] = getattr(config_class, attr)
     else:
         app.config.from_object(config_class)
+
+    # Session cookie settings — critical for HTTPS/Render deployment
+    is_prod = app.config.get("ENV", "production") == "production"
+    app.config["SESSION_COOKIE_SECURE"] = is_prod
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     
     # Setup logging
     setup_logging(app)
@@ -467,8 +473,17 @@ def register_routes(app: Flask) -> None:
         # Validate CSRF token
         csrf_token = request.form.get("_csrf_token", "")
         if not validate_csrf_token(csrf_token):
-            error = "Invalid request. Please try again." if g.lang == "en" else "طلب غير صالح. حاول مرة أخرى."
+            app.logger.warning(
+                f"CSRF validation failed: token_in_form='{bool(csrf_token)}' "
+                f"token_in_session='{bool(session.get('_csrf_token'))}' "
+                f"ip={g.client_ip_hash}"
+            )
+            # Regenerate CSRF and ask user to try again
+            session.pop("_csrf_token", None)
+            error = "Session expired. Please try again." if g.lang == "en" else "انتهت الجلسة. حاول مرة أخرى."
             products = bags_service.get_all_bags_raw()
+            for p in products:
+                _enrich_product(p)
             return render_template("order.html", error=error, products=products)
         
         # Get form data
